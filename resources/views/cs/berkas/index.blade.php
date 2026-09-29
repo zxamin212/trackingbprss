@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
-        <h3 class="fw-bold mb-3">Verifikasi Berkas</h3>
-        <h6 class="op-7 mb-2">Daftar berkas kredit di kantor Anda</h6>
+        <h3 class="fw-bold mb-3">Daftar Berkas</h3>
+        <h6 class="op-7 mb-2">Berkas yang sudah Anda input dan status prosesnya</h6>
     </x-slot>
 
     @if(session('success'))
@@ -40,14 +40,15 @@
                                     @php
                                         $statusColor = match($item->status_terkini) {
                                             'diajukan' => 'secondary',
-                                            'verifikasi' => 'info',
+                                            'screening_data' => 'info',
+                                            'slik' => 'info',
                                             'survey' => 'primary',
                                             'komite' => 'primary',
-                                            'ditolak_survey', 'ditolak_komite' => 'danger',
-                                            'belum_lengkap' => 'warning',
-                                            'akad' => 'warning',
-                                            'pencairan' => 'success',
-                                            'dibatalkan' => 'dark',
+                                            'realisasi' => 'warning',
+                                            'cair' => 'success',
+                                            'batal' => 'dark',
+                                            'pending' => 'warning',
+                                            'tolak' => 'danger',
                                             default => 'secondary',
                                         };
                                     @endphp
@@ -58,27 +59,12 @@
                                 <td>{{ $item->tanggal_masuk->translatedFormat('d M Y') }}</td>
                                 <td class="text-end">
                                     <a href="{{ route('cs.berkas.show', $item->id) }}" class="btn btn-sm btn-label-info btn-round">
-                                        Lihat
+                                        Lihat Detail
                                     </a>
-
                                     @if($item->status_terkini === 'diajukan')
-                                        <form action="{{ route('cs.berkas.verifikasi', $item->id) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn btn-sm btn-label-success btn-round"
-                                                    onclick="return confirm('Tandai berkas ini selesai diverifikasi?')">
-                                                Verifikasi
-                                            </button>
-                                        </form>
-                                    @endif
-
-                                    @if(!in_array($item->status_terkini, ['pencairan', 'dibatalkan', 'ditolak_survey', 'ditolak_komite']))
-                                        <form action="{{ route('cs.berkas.batalkan', $item->id) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn btn-sm btn-label-danger btn-round"
-                                                    onclick="return confirm('Yakin batalkan berkas ini?')">
-                                                Batalkan
-                                            </button>
-                                        </form>
+                                        <a href="{{ route('cs.berkas.edit', $item->id) }}" class="btn btn-sm btn-label-primary btn-round">
+                                            Edit
+                                        </a>
                                     @endif
                                 </td>
                             </tr>

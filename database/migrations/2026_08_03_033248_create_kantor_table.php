@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('kantor', function (Blueprint $table) {
             $table->id();
             $table->string('nama_kantor');
-            $table->enum('jenis', ['cabang', 'kas']);
+            $table->enum('jenis', ['pusat', 'cabang', 'kas']); // <--- Tambahkan 'pusat'
             $table->string('alamat')->nullable();
             $table->timestamps();
         });

@@ -9,23 +9,29 @@ class KantorSeeder extends Seeder
 {
     public function run(): void
     {
-        Kantor::create([
-            'nama_kantor' => 'Kantor Cabang Utama',
-            'jenis' => 'cabang',
-        ]);
+        Kantor::firstOrCreate(
+            ['nama_kantor' => 'Kantor Cabang Pabuaran'],
+            ['jenis' => 'cabang', 'area' => 'timur']
+        );
 
-        $kantorKas = [
-            'Kantor Kas 1', 'Kantor Kas 2', 'Kantor Kas 3', 'Kantor Kas 4',
-            'Kantor Kas 5', 'Kantor Kas 6', 'Kantor Kas 7', 'Kantor Kas 8',
-            'Kantor Kas 9', 'Kantor Kas 10', 'Kantor Kas 11', 'Kantor Kas 12',
-            'Kantor Kas 13', 'Kantor Kas 14',
+        Kantor::firstOrCreate(
+            ['nama_kantor' => 'Kantor Pusat'],
+            ['jenis' => 'pusat', 'area' => 'barat']
+        );
+
+        $wilayah = [
+            'barat'   => ['Kantor Kas Sumber', 'Kantor Kas Gegesik', 'Kantor Kas Arjawinangun', 'Kantor Kas Ciwaringin'],
+            'selatan' => ['Kantor Kas Cangkoak', 'Kantor Kas Bobos', 'Kantor Kas Sedong', 'Kantor Kas Talun', 'Kantor Kas Beber'],
+            'timur'   => ['Kantor Kas Sindang', 'Kantor Kas Karangsembung', 'Kantor Kas Waled', 'Kantor Kas Ciledug', 'Kantor Kas Pebadilan'],
         ];
 
-        foreach ($kantorKas as $nama) {
-            Kantor::create([
-                'nama_kantor' => $nama,
-                'jenis' => 'kas',
-            ]);
+        foreach ($wilayah as $area => $kantorList) {
+            foreach ($kantorList as $nama) {
+                Kantor::firstOrCreate(
+                    ['nama_kantor' => $nama],
+                    ['jenis' => 'kas', 'area' => $area]
+                );
+            }
         }
     }
 }

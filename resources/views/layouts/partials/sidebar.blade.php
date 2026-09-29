@@ -30,28 +30,84 @@
                 @auth
                     @php $role = auth()->user()->role; @endphp
 
-                    @if($role === 'cs')
-                        <li class="nav-section"><h4 class="text-section">Proses Berkas</h4></li>
-                        <li class="nav-item {{ request()->routeIs('cs.berkas.create') ? 'active' : '' }}">
-                            <a href="{{ route('cs.berkas.create') }}">
-                                <i class="fas fa-plus-circle"></i>
-                                <p>Input Berkas Baru</p>
-                            </a>
-                        </li>
-                        <li class="nav-item {{ request()->routeIs('cs.berkas.index') ? 'active' : '' }}">
-                            <a href="{{ route('cs.berkas.index') }}">
-                                <i class="fas fa-folder-open"></i>
-                                <p>Verifikasi Berkas</p>
-                            </a>
-                        </li>
-                    @elseif($role === 'senior_loan_officer')
+                @if($role === 'cs')
+                    <li class="nav-section"><h4 class="text-section">Proses Berkas</h4></li>
+                    <li class="nav-item {{ request()->routeIs('cs.berkas.create') ? 'active' : '' }}">
+                        <a href="{{ route('cs.berkas.create') }}">
+                            <i class="fas fa-plus-circle"></i>
+                            <p>Input Berkas Baru</p>
+                        </a>
+                    </li>
+                    <li class="nav-item {{ request()->routeIs('cs.berkas.index') ? 'active' : '' }}">
+                        <a href="{{ route('cs.berkas.index') }}">
+                            <i class="fas fa-folder-open"></i>
+                            <p>Data Berkas</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-section"><h4 class="text-section">Laporan</h4></li>
+                    <li class="nav-item {{ request()->routeIs('cs.laporan.cair') ? 'active' : '' }}">
+                        <a href="{{ route('cs.laporan.cair') }}">
+                            <i class="fas fa-check-circle"></i>
+                            <p>Aplikasi Cair</p>
+                        </a>
+                    </li>
+                    <li class="nav-item {{ request()->routeIs('cs.laporan.batal') ? 'active' : '' }}">
+                        <a href="{{ route('cs.laporan.batal') }}">
+                            <i class="fas fa-ban"></i>
+                            <p>Aplikasi Batal</p>
+                        </a>
+                    </li>
+                    <li class="nav-item {{ request()->routeIs('cs.laporan.tolak') ? 'active' : '' }}">
+                        <a href="{{ route('cs.laporan.tolak') }}">
+                            <i class="fas fa-times-circle"></i>
+                            <p>Aplikasi Tolak</p>
+                        </a>
+                    </li>
+                    <li class="nav-item {{ request()->routeIs('cs.laporan.index') ? 'active' : '' }}">
+                        <a href="{{ route('cs.laporan.index') }}">
+                            <i class="fas fa-file-export"></i>
+                            <p>Laporan & Export</p>
+                        </a>
+                    </li>
+
+
+                    @elseif($role === 'slo')
                         <li class="nav-section"><h4 class="text-section">Proses Berkas</h4></li>
                         <li class="nav-item {{ request()->routeIs('slo.berkas.index') ? 'active' : '' }}">
                             <a href="{{ route('slo.berkas.index') }}">
-                                <i class="fas fa-search-dollar"></i>
-                                <p>Survey & Komite</p>
+                                <i class="fas fa-tasks"></i>
+                                <p>Daftar Monitoring</p>
                             </a>
                         </li>
+
+                        <li class="nav-section"><h4 class="text-section">Laporan</h4></li>
+                        <li class="nav-item {{ request()->routeIs('slo.laporan.cair') ? 'active' : '' }}">
+                            <a href="{{ route('slo.laporan.cair') }}">
+                                <i class="fas fa-check-circle"></i>
+                                <p>Aplikasi Cair</p>
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('slo.laporan.batal') ? 'active' : '' }}">
+                            <a href="{{ route('slo.laporan.batal') }}">
+                                <i class="fas fa-ban"></i>
+                                <p>Aplikasi Batal</p>
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('slo.laporan.tolak') ? 'active' : '' }}">
+                            <a href="{{ route('slo.laporan.tolak') }}">
+                                <i class="fas fa-times-circle"></i>
+                                <p>Aplikasi Tolak</p>
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('slo.laporan.index') ? 'active' : '' }}">
+                            <a href="{{ route('slo.laporan.index') }}">
+                                <i class="fas fa-file-export"></i>
+                                <p>Laporan & Export</p>
+                            </a>
+                        </li>
+
+
                     @elseif($role === 'admin_legal')
                         <li class="nav-section"><h4 class="text-section">Proses Berkas</h4></li>
                         <li class="nav-item {{ request()->routeIs('legal.berkas.index') ? 'active' : '' }}">
@@ -97,6 +153,34 @@
                         </li>
                         <li class="nav-item {{ request()->routeIs('direksi.laporan.*') ? 'active' : '' }}">
                             <a href="{{ route('direksi.laporan.index') }}">
+                                <i class="fas fa-chart-bar"></i>
+                                <p>Laporan</p>
+                            </a>
+                        </li>
+                    @elseif($role === 'area_manager')
+                        <li class="nav-section"><h4 class="text-section">Monitoring</h4></li>
+                        <li class="nav-item {{ request()->routeIs('am.berkas.*') ? 'active' : '' }}">
+                            <a href="{{ route('am.berkas.index') }}">
+                                <i class="fas fa-th-list"></i>
+                                <p>Semua Berkas</p>
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('am.laporan.*') ? 'active' : '' }}">
+                            <a href="{{ route('am.laporan.index') }}">
+                                <i class="fas fa-chart-bar"></i>
+                                <p>Laporan</p>
+                            </a>
+                        </li>
+                    @elseif($role === 'manager_bisnis')
+                        <li class="nav-section"><h4 class="text-section">Monitoring</h4></li>
+                        <li class="nav-item {{ request()->routeIs('mb.berkas.*') ? 'active' : '' }}">
+                            <a href="{{ route('mb.berkas.index') }}">
+                                <i class="fas fa-th-list"></i>
+                                <p>Semua Berkas</p>
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('mb.laporan.*') ? 'active' : '' }}">
+                            <a href="{{ route('mb.laporan.index') }}">
                                 <i class="fas fa-chart-bar"></i>
                                 <p>Laporan</p>
                             </a>

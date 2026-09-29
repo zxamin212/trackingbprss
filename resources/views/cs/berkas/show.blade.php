@@ -4,20 +4,93 @@
         <h6 class="op-7 mb-2">{{ $berkas->nomor_berkas }}</h6>
     </x-slot>
 
+    @if(session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
+
+    @php
+        $statusColor = match($berkas->status_terkini) {
+            'diajukan' => 'secondary',
+            'screening_data' => 'info',
+            'slik' => 'info',
+            'survey' => 'primary',
+            'komite' => 'primary',
+            'realisasi' => 'warning',
+            'cair' => 'success',
+            'batal' => 'dark',
+            'pending' => 'warning',
+            'tolak' => 'danger',
+            default => 'secondary',
+        };
+    @endphp
+
     <div class="row">
         <div class="col-md-5">
             <div class="card card-round">
                 <div class="card-body">
-                    <p class="mb-1"><span class="text-muted">No. Berkas</span></p>
-                    <h5 class="mono">{{ $berkas->nomor_berkas }}</h5>
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <p class="mb-1"><span class="text-muted">No. Berkas</span></p>
+                            <h5 class="mono mb-0">{{ $berkas->nomor_berkas }}</h5>
+                        </div>
+                        <span class="badge badge-{{ $statusColor }}">
+                            {{ ucfirst(str_replace('_', ' ', $berkas->status_terkini)) }}
+                        </span>
+                    </div>
 
                     <hr>
 
-                    <p class="mb-1"><span class="text-muted">Nasabah</span></p>
+                    <h6 class="fw-bold mb-2">Data Nasabah</h6>
+                    <p class="mb-1"><span class="text-muted">Nama</span></p>
                     <p class="fw-bold">{{ $berkas->nama_nasabah }}</p>
 
+                    <p class="mb-1"><span class="text-muted">Tempat, Tanggal Lahir</span></p>
+                    <p class="fw-bold">{{ $berkas->tempat_lahir }}, {{ $berkas->tanggal_lahir?->translatedFormat('d M Y') }}</p>
+
+                    <p class="mb-1"><span class="text-muted">Jenis Kelamin</span></p>
+                    <p class="fw-bold">{{ $berkas->jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan' }}</p>
+
+                    <p class="mb-1"><span class="text-muted">Alamat KTP</span></p>
+                    <p class="fw-bold">{{ $berkas->alamat_ktp }}</p>
+
+                    <p class="mb-1"><span class="text-muted">Alamat Domisili</span></p>
+                    <p class="fw-bold">{{ $berkas->alamat_domisili ?: '-' }}</p>
+
+                    <p class="mb-1"><span class="text-muted">No. HP</span></p>
+                    <p class="fw-bold">{{ $berkas->no_hp }}</p>
+
+                    <p class="mb-1"><span class="text-muted">Pekerjaan / Usaha</span></p>
+                    <p class="fw-bold">{{ $berkas->pekerjaan_usaha }}</p>
+
+                    <hr>
+
+                    <h6 class="fw-bold mb-2">Data Pengajuan</h6>
                     <p class="mb-1"><span class="text-muted">Jenis Kredit</span></p>
                     <p class="fw-bold">{{ $berkas->jenis_kredit }}</p>
+
+                    <p class="mb-1"><span class="text-muted">Plafon</span></p>
+                    <p class="fw-bold">Rp {{ number_format($berkas->plafon, 0, ',', '.') }}</p>
+
+                    <p class="mb-1"><span class="text-muted">Dokumen Pendukung</span></p>
+                    @if($berkas->file_dokumen)
+                        <a href="{{ Storage::url($berkas->file_dokumen) }}" target="_blank" class="btn btn-sm btn-label-info btn-round">
+                            <i class="fas fa-file-pdf me-1"></i> Lihat Dokumen
+                        </a>
+                    @else
+                        <p class="text-muted">Tidak ada file</p>
+                    @endif
+
+                    <hr>
+
+                    <h6 class="fw-bold mb-2">Data Proses</h6>
+                    <p class="mb-1"><span class="text-muted">Kantor</span></p>
+                    <p class="fw-bold">{{ $berkas->kantor->nama_kantor ?? '-' }}</p>
+
+                    <p class="mb-1"><span class="text-muted">SLO Penanggung Jawab</span></p>
+                    <p class="fw-bold">{{ $berkas->slo->name ?? '-' }}</p>
+
+                    <p class="mb-1"><span class="text-muted">Sumber Berkas</span></p>
+                    <p class="fw-bold">{{ $berkas->sumber === 'marketing' ? 'Marketing (door to door)' : 'Nasabah datang langsung' }}</p>
 
                     <p class="mb-1"><span class="text-muted">Tanggal Masuk</span></p>
                     <p class="fw-bold">{{ $berkas->tanggal_masuk->translatedFormat('d M Y') }}</p>
@@ -25,11 +98,16 @@
                     @if($berkas->tanggal_selesai)
                         <p class="mb-1"><span class="text-muted">Tanggal Selesai</span></p>
                         <p class="fw-bold">{{ $berkas->tanggal_selesai->translatedFormat('d M Y') }}
-                            ({{ $berkas->tanggal_masuk->diffInDays($berkas->tanggal_selesai) }} hari)
+                            ({{ $berkas->lama_hari }} hari)
                         </p>
                     @else
                         <p class="mb-1"><span class="text-muted">Sudah Berjalan</span></p>
-                        <p class="fw-bold text-warning">{{ $berkas->tanggal_masuk->diffInDays(now()) }} hari</p>
+                        <p class="fw-bold text-warning">{{ $berkas->lama_hari }} hari</p>
+                    @endif
+
+                    @if($berkas->keterangan)
+                        <p class="mb-1"><span class="text-muted">Keterangan</span></p>
+                        <p class="fw-bold">{{ $berkas->keterangan }}</p>
                     @endif
                 </div>
             </div>
@@ -41,10 +119,18 @@
                     <div class="card-title">Riwayat Proses</div>
                 </div>
                 <div class="card-body">
-                    @foreach($berkas->histories as $history)
+                    @forelse($berkas->histories as $history)
+                        @php
+                            $dotColor = match($history->status) {
+                                'tolak', 'batal' => '#e63757',
+                                'pending' => '#f0b429',
+                                'cair' => '#1f9d63',
+                                default => '#3b7ddd',
+                            };
+                        @endphp
                         <div class="d-flex mb-3">
                             <div class="me-3 text-center" style="width: 16px;">
-                                <div style="width: 12px; height: 12px; border-radius: 50%; background: {{ $loop->last ? '#f0b429' : '#1f9d63' }}; margin-top: 4px;"></div>
+                                <div style="width: 12px; height: 12px; border-radius: 50%; background: {{ $dotColor }}; margin-top: 4px;"></div>
                                 @if(!$loop->last)
                                     <div style="width: 1px; height: 100%; background: #e6e8ef; margin: 4px auto;"></div>
                                 @endif
@@ -60,12 +146,19 @@
                                 @endif
                             </div>
                         </div>
-                    @endforeach
+                    @empty
+                        <p class="text-muted">Belum ada riwayat.</p>
+                    @endforelse
                 </div>
             </div>
         </div>
     </div>
 
+    @if($berkas->status_terkini === 'diajukan')
+        <a href="{{ route('cs.berkas.edit', $berkas->id) }}" class="btn btn-primary btn-round">
+            <i class="fas fa-edit me-1"></i> Edit Berkas
+        </a>
+    @endif
     <a href="{{ route('cs.berkas.index') }}" class="btn btn-label-secondary btn-round">
         <i class="fas fa-arrow-left me-1"></i> Kembali
     </a>

@@ -15,6 +15,7 @@ class Kantor extends Model
         'nama_kantor',
         'jenis',
         'alamat',
+        'area',
     ];
 
     public function users()

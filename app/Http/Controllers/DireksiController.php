@@ -2,25 +2,61 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BerkasKredit;
+use Illuminate\Http\Request;
+use App\Services\DurasiTahapService;
+use App\Models\Kantor;
+use App\Services\LaporanBerkasService;
+
+
 class DireksiController extends Controller
 {
+
     public function dashboard()
     {
-        return view('direksi.dashboard');
+        $totalAktif = BerkasKredit::whereNotIn('status_terkini', ['cair', 'batal', 'tolak'])->count();
+        $totalCair  = BerkasKredit::where('status_terkini', 'cair')->count();
+        $totalTolak = BerkasKredit::where('status_terkini', 'tolak')->count();
+        $totalBatal = BerkasKredit::where('status_terkini', 'batal')->count();
+
+        $durasiPerTahap = DurasiTahapService::rataRata();
+
+        return view('direksi.dashboard', compact(
+            'totalAktif', 'totalCair', 'totalTolak', 'totalBatal', 'durasiPerTahap'
+        ));
     }
 
-    public function berkasIndex()
+    public function berkasIndex(Request $request)
     {
-        return view('direksi.berkas.index');
+        $berkas = BerkasKredit::with('kantor')
+            ->whereNotIn('status_terkini', ['cair', 'batal', 'tolak'])
+            ->when($request->filled('cari'), fn($q) => $q->where('nama_nasabah', 'like', '%' . $request->cari . '%'))
+            ->latest()
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('direksi.berkas.index', compact('berkas'));
     }
 
     public function berkasShow($id)
     {
-        return view('direksi.berkas.show');
+        $berkas = BerkasKredit::with(['histories.user', 'kantor', 'user', 'slo'])->findOrFail($id);
+
+        return view('direksi.berkas.show', compact('berkas'));
     }
 
-    public function laporanIndex()
+    public function laporanIndex(Request $request)
     {
-        return view('direksi.laporan.index');
+        return (new LaporanBerkasService())->tampilkan($request, [
+            'judul'       => 'Laporan Berkas — Semua Kantor',
+            'routeIndex'  => 'direksi.laporan.index',
+            'routeExport' => 'direksi.laporan.export',
+            'kantors'     => Kantor::orderBy('nama_kantor')->get(),
+        ]);
+    }
+
+    public function laporanExport(Request $request)
+    {
+        return (new LaporanBerkasService())->export($request, 'Semua Kantor');
     }
 }

@@ -9,7 +9,7 @@
     />
     <link
       rel="icon"
-      href="assets/img/kaiadmin/favicon.ico"
+      href="assets/img/logo-bpr2.png"
       type="image/x-icon"
     />
 

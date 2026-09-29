@@ -36,8 +36,11 @@ class AuthenticatedSessionController extends Controller
             return match (auth()->user()->role) {
                 'admin' => route('admin.dashboard'),
                 'cs' => route('cs.dashboard'),
-                'senior_loan_officer' => route('slo.dashboard'),
+                'slo' => route('slo.dashboard'),
                 'admin_legal' => route('legal.dashboard'),
+                'direksi' => route('direksi.dashboard'),
+                'area_manager' => route('am.dashboard'),
+                'manager_bisnis' => route('mb.dashboard'),
                 default => route('login'),
             };
         }

@@ -3,8 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\BerkasKredit;
+use App\Models\Kantor;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use App\Services\LaporanBerkasService;
+
 
 class CsController extends Controller
 {
@@ -13,58 +18,135 @@ class CsController extends Controller
         $kantorId = auth()->user()->kantor_id;
 
         $berkasBerjalan = BerkasKredit::where('kantor_id', $kantorId)
-            ->whereNull('tanggal_selesai')
+            ->whereNotIn('status_terkini', ['cair', 'batal', 'tolak'])
             ->count();
 
-        $perluDiverifikasi = BerkasKredit::where('kantor_id', $kantorId)
-            ->where('status_terkini', 'diajukan')
+        $totalBerkas = BerkasKredit::where('kantor_id', $kantorId)->count();
+
+        $totalCair = BerkasKredit::where('kantor_id', $kantorId)
+            ->where('status_terkini', 'cair')
             ->count();
 
-        return view('cs.dashboard', compact('berkasBerjalan', 'perluDiverifikasi'));
+        $totalTolak = BerkasKredit::where('kantor_id', $kantorId)
+            ->where('status_terkini', 'tolak')
+            ->count();
+
+        $totalBatal = BerkasKredit::where('kantor_id', $kantorId)
+            ->where('status_terkini', 'batal')
+            ->count();
+
+        $berkasTerbaru = BerkasKredit::where('kantor_id', $kantorId)
+            ->latest()
+            ->take(5)
+            ->get();
+
+        return view('cs.dashboard', compact(
+            'berkasBerjalan', 'totalBerkas', 'totalCair', 'totalTolak', 'totalBatal', 'berkasTerbaru'
+        ));
     }
 
-    public function berkasIndex()
+    public function berkasIndex(Request $request)
     {
         $berkas = BerkasKredit::where('kantor_id', auth()->user()->kantor_id)
+            ->whereNotIn('status_terkini', ['cair', 'batal', 'tolak'])
+            ->when($request->filled('cari'), function ($query) use ($request) {
+                $query->where('nama_nasabah', 'like', '%' . $request->cari . '%');
+            })
             ->latest()
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString();
 
         return view('cs.berkas.index', compact('berkas'));
     }
 
+    public function laporanCair(Request $request)
+    {
+        return $this->laporanByStatus($request, 'cair', 'Aplikasi Cair');
+    }
+
+    public function laporanBatal(Request $request)
+    {
+        return $this->laporanByStatus($request, 'batal', 'Aplikasi Batal');
+    }
+
+    public function laporanTolak(Request $request)
+    {
+        return $this->laporanByStatus($request, 'tolak', 'Aplikasi Tolak');
+    }
+
+    private function laporanByStatus(Request $request, string $status, string $judul)
+    {
+        $berkas = BerkasKredit::where('kantor_id', auth()->user()->kantor_id)
+            ->where('status_terkini', $status)
+            ->when($request->filled('cari'), function ($query) use ($request) {
+                $query->where('nama_nasabah', 'like', '%' . $request->cari . '%');
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('cs.laporan.index', compact('berkas', 'judul'));
+    }
+
     public function berkasCreate()
     {
-        return view('cs.berkas.create');
+        $kantors = Kantor::orderBy('nama_kantor')->get();
+        $slos = User::where('role', 'slo')->orderBy('name')->get();
+
+        return view('cs.berkas.create', compact('kantors', 'slos'));
     }
 
     public function berkasStore(Request $request)
     {
         $validated = $request->validate([
-            'nama_nasabah' => 'required|string|max:255',
-            'jenis_kredit' => 'required|string',
-            'sumber' => 'required|in:langsung,marketing',
-            'tanggal_masuk' => 'required|date',
-            'keterangan' => 'nullable|string',
+            'nama_nasabah'    => 'required|string|max:255',
+            'tempat_lahir'    => 'required|string|max:255',
+            'tanggal_lahir'   => 'required|date',
+            'jenis_kelamin'   => 'required|in:L,P',
+            'alamat_ktp'      => 'required|string',
+            'alamat_domisili' => 'nullable|string',
+            'no_hp'           => 'required|string|max:20',
+            'pekerjaan_usaha' => 'required|string|max:255',
+            'jenis_kredit'    => 'required|string',
+            'plafon'          => 'required|numeric|min:0',
+            'file_dokumen'    => 'required|file|mimes:pdf|max:5120',
+            'kantor_id'       => 'required|exists:kantor,id',
+            'slo_id'          => 'required|exists:users,id',
+            'sumber'          => 'required|in:langsung,marketing',
+            'tanggal_masuk'   => 'required|date',
+            'keterangan'      => 'nullable|string',
         ]);
 
-        DB::transaction(function () use ($validated) {
-            $nomorBerkas = $this->generateNomorBerkas();
+        DB::transaction(function () use ($validated, $request) {
+            $path = $request->file('file_dokumen')->store('berkas/dokumen', 'public');
 
             $berkas = BerkasKredit::create([
-                'nomor_berkas' => $nomorBerkas,
-                'nama_nasabah' => $validated['nama_nasabah'],
-                'jenis_kredit' => $validated['jenis_kredit'],
-                'status_terkini' => 'diajukan',
-                'tanggal_masuk' => $validated['tanggal_masuk'],
-                'kantor_id' => auth()->user()->kantor_id,
-                'user_id' => auth()->id(),
+                'nomor_berkas'    => BerkasKredit::generateNomorBerkas(),
+                'nama_nasabah'    => $validated['nama_nasabah'],
+                'tempat_lahir'    => $validated['tempat_lahir'],
+                'tanggal_lahir'   => $validated['tanggal_lahir'],
+                'jenis_kelamin'   => $validated['jenis_kelamin'],
+                'alamat_ktp'      => $validated['alamat_ktp'],
+                'alamat_domisili' => $validated['alamat_domisili'] ?: $validated['alamat_ktp'],
+                'no_hp'           => $validated['no_hp'],
+                'pekerjaan_usaha' => $validated['pekerjaan_usaha'],
+                'jenis_kredit'    => $validated['jenis_kredit'],
+                'plafon'          => $validated['plafon'],
+                'file_dokumen'    => $path,
+                'status_terkini'  => 'diajukan',
+                'tanggal_masuk'   => $validated['tanggal_masuk'],
+                'kantor_id'       => $validated['kantor_id'],
+                'slo_id'          => $validated['slo_id'],
+                'sumber'          => $validated['sumber'],
+                'keterangan'      => $validated['keterangan'] ?? null,
+                'user_id'         => auth()->id(),
             ]);
 
             $berkas->histories()->create([
-                'status' => 'diajukan',
+                'status'     => 'diajukan',
                 'keterangan' => $validated['keterangan']
                     ?? ('Berkas masuk via ' . ($validated['sumber'] === 'marketing' ? 'marketing (door to door)' : 'nasabah langsung')),
-                'user_id' => auth()->id(),
+                'user_id'    => auth()->id(),
             ]);
         });
 
@@ -74,58 +156,86 @@ class CsController extends Controller
 
     public function berkasShow($id)
     {
-        $berkas = BerkasKredit::with('histories.user')->findOrFail($id);
+        $berkas = BerkasKredit::with('histories.user')
+            ->where('kantor_id', auth()->user()->kantor_id)
+            ->findOrFail($id);
 
         return view('cs.berkas.show', compact('berkas'));
     }
 
-    public function verifikasi(Request $request, $id)
+    public function edit($id)
     {
-        $berkas = BerkasKredit::findOrFail($id);
+        $berkas = BerkasKredit::where('kantor_id', auth()->user()->kantor_id)
+            ->where('status_terkini', 'diajukan')
+            ->findOrFail($id);
 
-        $berkas->histories()->create([
-            'status' => 'verifikasi',
-            'keterangan' => $request->input('keterangan'),
-            'user_id' => auth()->id(),
-        ]);
+        $kantors = Kantor::orderBy('nama_kantor')->get();
+        $slos = User::where('role', 'slo')->orderBy('name')->get();
 
-        $berkas->update(['status_terkini' => 'verifikasi']);
-
-        return back()->with('success', 'Berkas ditandai selesai diverifikasi.');
+        return view('cs.berkas.edit', compact('berkas', 'kantors', 'slos'));
     }
 
-    public function batalkan(Request $request, $id)
+    public function update(Request $request, $id)
     {
-        $berkas = BerkasKredit::findOrFail($id);
+        $berkas = BerkasKredit::where('kantor_id', auth()->user()->kantor_id)
+            ->where('status_terkini', 'diajukan')
+            ->findOrFail($id);
 
-        $berkas->histories()->create([
-            'status' => 'dibatalkan',
-            'keterangan' => $request->input('keterangan', 'Dibatalkan oleh CS'),
-            'user_id' => auth()->id(),
+        $validated = $request->validate([
+            'nama_nasabah'    => 'required|string|max:255',
+            'tempat_lahir'    => 'required|string|max:255',
+            'tanggal_lahir'   => 'required|date',
+            'jenis_kelamin'   => 'required|in:L,P',
+            'alamat_ktp'      => 'required|string',
+            'alamat_domisili' => 'nullable|string',
+            'no_hp'           => 'required|string|max:20',
+            'pekerjaan_usaha' => 'required|string|max:255',
+            'jenis_kredit'    => 'required|string',
+            'plafon'          => 'required|numeric|min:0',
+            'file_dokumen'    => 'nullable|file|mimes:pdf|max:5120',
+            'kantor_id'       => 'required|exists:kantor,id',
+            'slo_id'          => 'required|exists:users,id',
+            'sumber'          => 'required|in:langsung,marketing',
+            'tanggal_masuk'   => 'required|date',
+            'keterangan'      => 'nullable|string',
         ]);
 
-        $berkas->update([
-            'status_terkini' => 'dibatalkan',
-            'tanggal_selesai' => now(),
-        ]);
+        if ($request->hasFile('file_dokumen')) {
+            if ($berkas->file_dokumen && Storage::disk('public')->exists($berkas->file_dokumen)) {
+                Storage::disk('public')->delete($berkas->file_dokumen);
+            }
+            $validated['file_dokumen'] = $request->file('file_dokumen')->store('berkas/dokumen', 'public');
+        } else {
+            unset($validated['file_dokumen']);
+        }
 
-        return back()->with('success', 'Berkas dibatalkan.');
+        $berkas->update($validated);
+
+        return redirect()->route('cs.berkas.show', $berkas->id)
+            ->with('success', 'Berkas berhasil diperbarui.');
     }
 
-    /**
-     * Generate nomor berkas otomatis, format: BK-{tahun}-{urutan}
-     */
-    private function generateNomorBerkas(): string
+    private function layananLaporan(): LaporanBerkasService
     {
-        $tahun = date('Y');
-        $terakhir = BerkasKredit::where('nomor_berkas', 'like', "BK-{$tahun}-%")
-            ->orderByDesc('id')
-            ->first();
+        $kantorId = auth()->user()->kantor_id;
 
-        $urutan = $terakhir
-            ? ((int) substr($terakhir->nomor_berkas, -4)) + 1
-            : 1;
+        return new LaporanBerkasService(fn($q) => $q->where('kantor_id', $kantorId));
+    }
 
-        return sprintf('BK-%s-%04d', $tahun, $urutan);
+    public function laporanIndex(Request $request)
+    {
+        $kantor = auth()->user()->kantor->nama_kantor ?? 'Kantor Anda';
+
+        return $this->layananLaporan()->tampilkan($request, [
+            'judul'       => "Laporan Berkas — $kantor",
+            'routeIndex'  => 'cs.laporan.index',
+            'routeExport' => 'cs.laporan.export',
+            'kantors'     => null,
+        ]);
+    }
+
+    public function laporanExport(Request $request)
+    {
+        return $this->layananLaporan()->export($request, auth()->user()->kantor->nama_kantor ?? 'Kantor Anda');
     }
 }

@@ -46,9 +46,11 @@ class User extends Authenticatable
         return match ($this->role) {
             'admin' => 'admin.dashboard',
             'cs' => 'cs.dashboard',
-            'senior_loan_officer' => 'slo.dashboard',
+            'slo' => 'slo.dashboard',
             'admin_legal' => 'legal.dashboard',
-             'direksi' => 'direksi.dashboard',
+            'direksi' => 'direksi.dashboard',
+            'area_manager' => 'am.dashboard',
+            'manager_bisnis' => 'mb.dashboard',
             default => 'login',
         };
     }
