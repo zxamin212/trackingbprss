@@ -19,8 +19,8 @@ Route::prefix('/')->group(function () {
     Route::get('/', fn() => redirect()->route('login'))->name('home');
 
     // Cek status berkas (mirip cek tiket WBS)
-    Route::get('/tracking', [TrackingController::class, 'checkForm'])->name('tracking');
-    Route::post('/tracking', [TrackingController::class, 'checkStatus'])->name('tracking.check');
+    // Route::get('/tracking', [TrackingController::class, 'checkForm'])->name('tracking');
+    // Route::post('/tracking', [TrackingController::class, 'checkStatus'])->name('tracking.check');
 });
 
 // =====================
@@ -79,8 +79,8 @@ Route::middleware(['auth', 'role:cs'])
     Route::get('/berkas/tambah', [CsController::class, 'berkasCreate'])->name('berkas.create');
     Route::post('/berkas', [CsController::class, 'berkasStore'])->name('berkas.store');
     Route::get('/berkas/{id}', [CsController::class, 'berkasShow'])->name('berkas.show');
-    Route::post('/berkas/{id}/verifikasi', [CsController::class, 'verifikasi'])->name('berkas.verifikasi');
-    Route::post('/berkas/{id}/batalkan', [CsController::class, 'batalkan'])->name('berkas.batalkan');
+    // Route::post('/berkas/{id}/verifikasi', [CsController::class, 'verifikasi'])->name('berkas.verifikasi');
+    // Route::post('/berkas/{id}/batalkan', [CsController::class, 'batalkan'])->name('berkas.batalkan');
 
     Route::get('/berkas/{id}/edit', [CsController::class, 'edit'])->name('berkas.edit');
     Route::put('/berkas/{id}', [CsController::class, 'update'])->name('berkas.update');
