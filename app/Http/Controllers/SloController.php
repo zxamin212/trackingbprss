@@ -3,29 +3,44 @@
 namespace App\Http\Controllers;
 
 use App\Models\BerkasKredit;
-use Illuminate\Http\Request;
 use App\Services\LaporanBerkasService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class SloController extends Controller
 {
+    private const STATUS_FINAL = ['cair', 'tolak', 'batal'];
+
+    // status tujuan => status asal yang diizinkan
+    private const ALUR = [
+        'screening_data' => ['diajukan'],
+        'slik'           => ['screening_data'],
+        'survey'         => ['slik'],
+        'komite'         => ['survey'],
+        'realisasi'      => ['komite'],
+        'cair'           => ['realisasi'],
+    ];
+
     public function dashboard()
     {
         $sloId = auth()->id();
 
         $totalAktif = BerkasKredit::where('slo_id', $sloId)
-            ->whereNotIn('status_terkini', ['cair', 'batal', 'tolak'])
+            ->whereNotIn('status_terkini', self::STATUS_FINAL)
             ->count();
 
-        $totalCair = BerkasKredit::where('slo_id', $sloId)->where('status_terkini', 'cair')->count();
+        $totalCair  = BerkasKredit::where('slo_id', $sloId)->where('status_terkini', 'cair')->count();
         $totalTolak = BerkasKredit::where('slo_id', $sloId)->where('status_terkini', 'tolak')->count();
         $totalBatal = BerkasKredit::where('slo_id', $sloId)->where('status_terkini', 'batal')->count();
 
         return view('slo.dashboard', compact('totalAktif', 'totalCair', 'totalTolak', 'totalBatal'));
     }
+
     public function berkasIndex(Request $request)
     {
         $berkas = BerkasKredit::where('slo_id', auth()->id())
-            ->whereNotIn('status_terkini', ['cair', 'batal', 'tolak'])
+            ->whereNotIn('status_terkini', self::STATUS_FINAL)
             ->when($request->filled('cari'), function ($query) use ($request) {
                 $query->where('nama_nasabah', 'like', '%' . $request->cari . '%');
             })
@@ -74,23 +89,54 @@ class SloController extends Controller
         return view('slo.berkas.show', compact('berkas'));
     }
 
+    /**
+     * Ubah status berkas dengan pengaman:
+     * - baris dikunci selama transaksi (klik dobel / dua request bersamaan tidak lolos dua kali)
+     * - status final tidak bisa diubah lagi
+     * - tahap utama hanya boleh maju satu langkah dari tahap sebelumnya
+     * - pending, tolak, batal boleh dari status non-final mana pun
+     */
     private function updateStatus($id, string $status, string $keteranganDefault, ?string $tanggalSelesai = null)
     {
-        $berkas = BerkasKredit::where('slo_id', auth()->id())->findOrFail($id);
+        return DB::transaction(function () use ($id, $status, $keteranganDefault, $tanggalSelesai) {
+            $berkas = BerkasKredit::where('slo_id', auth()->id())
+                ->lockForUpdate()
+                ->findOrFail($id);
 
-        $berkas->histories()->create([
-            'status'     => $status,
-            'keterangan' => request('keterangan', $keteranganDefault),
-            'user_id'    => auth()->id(),
-        ]);
+            $asal = $berkas->status_terkini;
 
-        $data = ['status_terkini' => $status];
-        if ($tanggalSelesai) {
-            $data['tanggal_selesai'] = now();
-        }
-        $berkas->update($data);
+            if (in_array($asal, self::STATUS_FINAL, true)) {
+                throw ValidationException::withMessages([
+                    'status' => "Berkas sudah berstatus {$asal} dan tidak bisa diubah lagi.",
+                ]);
+            }
 
-        return $berkas;
+            if ($asal === $status) {
+                throw ValidationException::withMessages([
+                    'status' => "Berkas sudah berstatus {$status}.",
+                ]);
+            }
+
+            if (isset(self::ALUR[$status]) && !in_array($asal, self::ALUR[$status], true)) {
+                throw ValidationException::withMessages([
+                    'status' => "Berkas berstatus {$asal}, tidak bisa langsung dipindah ke {$status}.",
+                ]);
+            }
+
+            $berkas->histories()->create([
+                'status'     => $status,
+                'keterangan' => request('keterangan', $keteranganDefault),
+                'user_id'    => auth()->id(),
+            ]);
+
+            $data = ['status_terkini' => $status];
+            if ($tanggalSelesai) {
+                $data['tanggal_selesai'] = now();
+            }
+            $berkas->update($data);
+
+            return $berkas;
+        });
     }
 
     public function updateScreening(Request $request, $id)
@@ -149,29 +195,37 @@ class SloController extends Controller
 
     public function resume(Request $request, $id)
     {
-        $berkas = BerkasKredit::where('slo_id', auth()->id())->findOrFail($id);
+        $statusSebelumnya = DB::transaction(function () use ($request, $id) {
+            $berkas = BerkasKredit::where('slo_id', auth()->id())
+                ->lockForUpdate()
+                ->findOrFail($id);
 
-        if ($berkas->status_terkini !== 'pending') {
-            return back()->with('error', 'Berkas ini tidak sedang pending.');
-        }
+            if ($berkas->status_terkini !== 'pending') {
+                throw ValidationException::withMessages([
+                    'status' => 'Berkas ini tidak sedang pending.',
+                ]);
+            }
 
-        $statusSebelumnya = $berkas->histories()
-            ->where('status', '!=', 'pending')
-            ->reorder('id', 'desc')
-            ->value('status') ?? 'diajukan';
+            $sebelumnya = $berkas->histories()
+                ->where('status', '!=', 'pending')
+                ->reorder('id', 'desc')
+                ->value('status') ?? 'diajukan';
 
-        $berkas->histories()->create([
-            'status'     => $statusSebelumnya,
-            'keterangan' => $request->input('keterangan', 'Berkas dilanjutkan kembali dari pending'),
-            'user_id'    => auth()->id(),
-        ]);
+            $berkas->histories()->create([
+                'status'     => $sebelumnya,
+                'keterangan' => $request->input('keterangan', 'Berkas dilanjutkan kembali dari pending'),
+                'user_id'    => auth()->id(),
+            ]);
 
-        $berkas->update(['status_terkini' => $statusSebelumnya]);
+            $berkas->update(['status_terkini' => $sebelumnya]);
+
+            return $sebelumnya;
+        });
 
         return back()->with('success', 'Berkas dilanjutkan ke tahap ' . str_replace('_', ' ', $statusSebelumnya) . '.');
     }
 
-        private function layananLaporan(): LaporanBerkasService
+    private function layananLaporan(): LaporanBerkasService
     {
         $sloId = auth()->id();
 
@@ -192,7 +246,4 @@ class SloController extends Controller
     {
         return $this->layananLaporan()->export($request, 'Berkas yang ditangani ' . auth()->user()->name);
     }
-
-
-
-    }
+}
