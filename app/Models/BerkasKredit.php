@@ -19,7 +19,7 @@ class BerkasKredit extends Model
         // field tambahan
         'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin',
         'alamat_ktp', 'alamat_domisili', 'no_hp', 'pekerjaan_usaha',
-        'plafon', 'file_dokumen', 'slo_id', 'sumber_berkas', 'keterangan',
+        'plafon', 'file_dokumen', 'slo_id', 'sumber', 'keterangan',
     ];
 
     protected $casts = [
