@@ -87,12 +87,7 @@
 
                         <div class="mb-3">
                             <label class="form-label">Jenis Kredit</label>
-                            <select name="jenis_kredit" class="form-select" required>
-                                <option value="">-- Pilih jenis kredit --</option>
-                                <option value="Kredit Modal Usaha" {{ old('jenis_kredit') == 'Kredit Modal Usaha' ? 'selected' : '' }}>Kredit Modal Usaha</option>
-                                <option value="Kredit Investasi" {{ old('jenis_kredit') == 'Kredit Investasi' ? 'selected' : '' }}>Kredit Investasi</option>
-                                <option value="Kredit Konsumtif" {{ old('jenis_kredit') == 'Kredit Konsumtif' ? 'selected' : '' }}>Kredit Konsumtif</option>
-                            </select>
+                            <x-jenis-kredit-select />
                         </div>
 
                         <div class="mb-3">

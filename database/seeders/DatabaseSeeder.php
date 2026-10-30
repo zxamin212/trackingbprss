@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             KantorSeeder::class,
             UserSeeder::class,
+            JenisKreditSeeder::class,
         ]);
     }
 }

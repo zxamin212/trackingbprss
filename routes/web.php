@@ -63,6 +63,13 @@ Route::middleware(['auth', 'role:admin'])
     Route::get('/laporan', [AdminController::class, 'laporanIndex'])->name('laporan.index');
     Route::post('/laporan/export', [AdminController::class, 'exportProses'])->name('laporan.export');
 
+    // route jenis kredit
+    Route::get('/jenis-kredit', [AdminController::class, 'jenisKreditIndex'])->name('jenis-kredit.index');
+    Route::post('/jenis-kredit', [AdminController::class, 'jenisKreditStore'])->name('jenis-kredit.store');
+    Route::put('/jenis-kredit/{id}', [AdminController::class, 'jenisKreditUpdate'])->name('jenis-kredit.update');
+    Route::patch('/jenis-kredit/{id}/aktif', [AdminController::class, 'jenisKreditToggle'])->name('jenis-kredit.toggle');
+    Route::delete('/jenis-kredit/{id}', [AdminController::class, 'jenisKreditDestroy'])->name('jenis-kredit.destroy');
+
 
     });
 

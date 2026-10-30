@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BerkasKredit;
 use App\Models\Kantor;
 use App\Models\User;
+use App\Models\JenisKredit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +14,7 @@ use App\Services\DurasiTahapService;
 use Carbon\Carbon;
 use Dompdf\Dompdf;
 use App\Services\LaporanBerkasService;
+
 
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -313,6 +315,80 @@ class AdminController extends Controller
     public function exportProses(Request $request)
     {
         return (new LaporanBerkasService())->export($request, 'Semua Kantor');
+    }
+
+    // ==================== JENIS KREDIT ====================
+
+    public function jenisKreditIndex()
+    {
+        $jenisList = JenisKredit::orderByDesc('aktif')->orderBy('urutan')->orderBy('nama')->get();
+
+        // jumlah berkas per nama jenis kredit
+        $pemakaian = BerkasKredit::select('jenis_kredit', DB::raw('COUNT(*) as jumlah'))
+            ->groupBy('jenis_kredit')
+            ->pluck('jumlah', 'jenis_kredit');
+
+        return view('admin.jenis-kredit.index', compact('jenisList', 'pemakaian'));
+    }
+
+    public function jenisKreditStore(Request $request)
+    {
+        $validated = $request->validate([
+            'nama'   => 'required|string|max:100|unique:jenis_kredit,nama',
+            'urutan' => 'nullable|integer|min:0|max:9999',
+        ]);
+
+        JenisKredit::create([
+            'nama'   => $validated['nama'],
+            'urutan' => $validated['urutan'] ?? ((int) JenisKredit::max('urutan') + 1),
+            'aktif'  => true,
+        ]);
+
+        return back()->with('success', 'Jenis kredit berhasil ditambahkan.');
+    }
+
+    public function jenisKreditUpdate(Request $request, $id)
+    {
+        $jenis = JenisKredit::findOrFail($id);
+
+        $validated = $request->validate([
+            'nama'   => 'required|string|max:100|unique:jenis_kredit,nama,' . $jenis->id,
+            'urutan' => 'required|integer|min:0|max:9999',
+        ]);
+
+        DB::transaction(function () use ($jenis, $validated) {
+            $namaLama = $jenis->nama;
+
+            $jenis->update($validated);
+
+            // Berkas menyimpan nama jenis, jadi berkas lama ikut diperbarui kalau nama diganti
+            if ($namaLama !== $validated['nama']) {
+                BerkasKredit::where('jenis_kredit', $namaLama)->update(['jenis_kredit' => $validated['nama']]);
+            }
+        });
+
+        return back()->with('success', 'Jenis kredit berhasil diperbarui.');
+    }
+
+    public function jenisKreditToggle($id)
+    {
+        $jenis = JenisKredit::findOrFail($id);
+        $jenis->update(['aktif' => !$jenis->aktif]);
+
+        return back()->with('success', $jenis->aktif ? 'Jenis kredit diaktifkan.' : 'Jenis kredit dinonaktifkan.');
+    }
+
+    public function jenisKreditDestroy($id)
+    {
+        $jenis = JenisKredit::findOrFail($id);
+
+        if (BerkasKredit::where('jenis_kredit', $jenis->nama)->exists()) {
+            return back()->with('error', 'Jenis kredit ini sudah dipakai berkas, jadi tidak bisa dihapus. Nonaktifkan saja.');
+        }
+
+        $jenis->delete();
+
+        return back()->with('success', 'Jenis kredit berhasil dihapus.');
     }
 
 }

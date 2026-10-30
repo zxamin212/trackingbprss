@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\BerkasKredit;
+use App\Models\JenisKredit;
 use App\Models\Kantor;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use App\Services\LaporanBerkasService;
 
 
@@ -107,7 +109,8 @@ class CsController extends Controller
             'alamat_domisili' => 'nullable|string',
             'no_hp'           => 'required|string|max:20',
             'pekerjaan_usaha' => 'required|string|max:255',
-            'jenis_kredit'    => 'required|string',
+            // berkas baru hanya boleh memakai jenis kredit yang aktif
+            'jenis_kredit'    => ['required', Rule::in(JenisKredit::namaAktif())],
             'plafon'          => 'required|numeric|min:0',
             'file_dokumen'    => 'required|file|mimes:pdf|max:5120',
             'kantor_id'       => 'required|exists:kantor,id',
@@ -190,7 +193,8 @@ class CsController extends Controller
             'alamat_domisili' => 'nullable|string',
             'no_hp'           => 'required|string|max:20',
             'pekerjaan_usaha' => 'required|string|max:255',
-            'jenis_kredit'    => 'required|string',
+            // jenis aktif, atau nilai lama berkas ini (walau sudah nonaktif)
+            'jenis_kredit'    => ['required', Rule::in(array_merge(JenisKredit::namaAktif(), [$berkas->jenis_kredit]))],
             'plafon'          => 'required|numeric|min:0',
             'file_dokumen'    => 'nullable|file|mimes:pdf|max:5120',
             'kantor_id'       => 'required|exists:kantor,id',
