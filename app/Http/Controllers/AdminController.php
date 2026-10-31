@@ -340,7 +340,7 @@ class AdminController extends Controller
 
         JenisKredit::create([
             'nama'   => $validated['nama'],
-            'urutan' => $validated['urutan'] ?? ((int) JenisKredit::max('urutan') + 1),
+            'urutan' => $validated['urutan'] ?? ((int) JenisKredit::aktif()->max('urutan') + 1),
             'aktif'  => true,
         ]);
 
@@ -373,9 +373,20 @@ class AdminController extends Controller
     public function jenisKreditToggle($id)
     {
         $jenis = JenisKredit::findOrFail($id);
-        $jenis->update(['aktif' => !$jenis->aktif]);
 
-        return back()->with('success', $jenis->aktif ? 'Jenis kredit diaktifkan.' : 'Jenis kredit dinonaktifkan.');
+        if ($jenis->aktif) {
+            $jenis->update(['aktif' => false]);
+            $pesan = 'Jenis kredit dinonaktifkan.';
+        } else {
+            // Diaktifkan lagi: taruh paling bawah di antara yang aktif, supaya urutannya tidak bentrok
+            $jenis->update([
+                'aktif'  => true,
+                'urutan' => (int) JenisKredit::aktif()->max('urutan') + 1,
+            ]);
+            $pesan = 'Jenis kredit diaktifkan dan ditaruh di urutan paling bawah.';
+        }
+
+        return back()->with('success', $pesan);
     }
 
     public function jenisKreditDestroy($id)

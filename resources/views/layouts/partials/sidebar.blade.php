@@ -143,6 +143,12 @@
                                 <p>Laporan</p>
                             </a>
                         </li>
+                        <li class="nav-item {{ request()->routeIs('admin.jenis-kredit.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.jenis-kredit.index') }}">
+                                <i class="fas fa-tags"></i>
+                                <p>Jenis Kredit</p>
+                            </a>
+                        </li>
                     @elseif($role === 'direksi')
                         <li class="nav-section"><h4 class="text-section">Monitoring</h4></li>
                         <li class="nav-item {{ request()->routeIs('direksi.berkas.*') ? 'active' : '' }}">
