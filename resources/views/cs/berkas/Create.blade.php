@@ -108,22 +108,17 @@
                         <hr class="my-4">
                         <h6 class="fw-bold mb-3">Data Proses</h6>
 
+                        <!-- Perbaikan Tampilan Kantor & SLO Readonly -->
                         <div class="mb-3">
                             <label class="form-label">Kantor</label>
-                            <select name="kantor_id" id="kantor_id" class="form-select" required>
-                                <option value="">-- Pilih Kantor --</option>
-                                @foreach ($kantors as $kantor)
-                                    <option value="{{ $kantor->id }}" {{ old('kantor_id') == $kantor->id ? 'selected' : '' }}>
-                                        {{ $kantor->nama_kantor }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <input type="text" class="form-control" value="{{ $kantor->nama_kantor ?? '-' }}" readonly disabled>
+                            <input type="hidden" name="kantor_id" value="{{ $kantor->id ?? '' }}">
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">SLO</label>
-                            <input type="text" id="slo_display" class="form-control" value="-- Pilih Kantor dulu --" readonly disabled>
-                            <input type="hidden" name="slo_id" id="slo_id" value="{{ old('slo_id') }}">
+                            <input type="text" class="form-control" value="{{ $slo->name ?? '-' }}" readonly disabled>
+                            <input type="hidden" name="slo_id" value="{{ $slo->id ?? '' }}">
                         </div>
 
                         <div class="mb-3">
@@ -171,7 +166,7 @@
             }
         }
 
-        // Date picker format dd-mm-yyyy, tapi kirim ke server format yyyy-mm-dd
+        // Date picker format dd-mm-yyyy
         flatpickr(".datepicker", {
             dateFormat: "d-m-Y",
             allowInput: true,
@@ -182,11 +177,10 @@
             e.target.value = e.target.value.replace(/[^0-9]/g, '');
         });
 
-        // Plafon: format ribuan pakai titik saat mengetik, simpan angka murni di hidden input
+        // Plafon: format ribuan pakai titik saat mengetik
         const plafonDisplay = document.getElementById('plafon_display');
         const plafonHidden = document.getElementById('plafon');
 
-        // Set nilai awal kalau ada old input
         if (plafonHidden.value) {
             plafonDisplay.value = Number(plafonHidden.value).toLocaleString('id-ID');
         }
@@ -197,7 +191,7 @@
             e.target.value = raw ? Number(raw).toLocaleString('id-ID') : '';
         });
 
-        // Sebelum submit, konversi tanggal dd-mm-yyyy jadi yyyy-mm-dd supaya valid di backend
+        // Sebelum submit, konversi tanggal dd-mm-yyyy jadi yyyy-mm-dd
         document.getElementById('formBerkas').addEventListener('submit', function (e) {
             convertDateFormat('tanggal_lahir');
             convertDateFormat('tanggal_masuk');
@@ -205,47 +199,10 @@
 
         function convertDateFormat(id) {
             const field = document.getElementById(id);
-            const parts = field.value.split('-'); // dd-mm-yyyy
+            const parts = field.value.split('-'); 
             if (parts.length === 3) {
-                field.value = `${parts[2]}-${parts[1]}-${parts[0]}`; // yyyy-mm-dd
+                field.value = `${parts[2]}-${parts[1]}-${parts[0]}`; 
             }
         }
-
-        // SLO otomatis mengikuti Kantor yang dipilih (1 kantor = 1 SLO), ditampilkan sebagai teks
-        const kantorSelect = document.getElementById('kantor_id');
-        const sloDisplay = document.getElementById('slo_display');
-        const sloHidden = document.getElementById('slo_id');
-
-        const daftarSlo = [
-            @foreach ($slos as $slo)
-                { id: {{ $slo->id }}, kantorId: {{ $slo->kantor_id }}, nama: @json($slo->name) },
-            @endforeach
-        ];
-
-        function setSloByKantor() {
-            const kantorId = parseInt(kantorSelect.value);
-            const slo = daftarSlo.find(s => s.kantorId === kantorId);
-
-            if (!kantorId) {
-                sloDisplay.value = '-- Pilih Kantor dulu --';
-                sloHidden.value = '';
-                return;
-            }
-
-            if (!slo) {
-                sloDisplay.value = 'Tidak ada SLO untuk kantor ini';
-                sloHidden.value = '';
-                return;
-            }
-
-            sloDisplay.value = slo.nama;
-            sloHidden.value = slo.id;
-        }
-
-        kantorSelect.addEventListener('change', setSloByKantor);
-
-        // Jalankan sekali saat halaman load (misal validasi gagal, kantor sudah terisi dari old())
-        if (kantorSelect.value) setSloByKantor();
     </script>
-
 </x-app-layout>

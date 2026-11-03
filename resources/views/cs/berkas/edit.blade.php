@@ -4,6 +4,7 @@
         <h6 class="op-7 mb-2">{{ $berkas->nomor_berkas }} — masih bisa diedit selama status Diajukan</h6>
     </x-slot>
 
+    <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
 
     <div class="row">
@@ -42,7 +43,7 @@
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Tanggal Lahir</label>
                                 <input type="text" name="tanggal_lahir" id="tanggal_lahir" class="form-control datepicker"
-                                       value="{{ old('tanggal_lahir', $berkas->tanggal_lahir?->format('d-m-Y')) }}"
+                                       value="{{ old('tanggal_lahir', $berkas->tanggal_lahir ? \Carbon\Carbon::parse($berkas->tanggal_lahir)->format('d-m-Y') : '') }}"
                                        placeholder="dd-mm-yyyy" required autocomplete="off">
                             </div>
                         </div>
@@ -61,8 +62,12 @@
                         </div>
 
                         <div class="mb-3">
+                            <div class="form-check mb-2">
+                                <input type="checkbox" id="samaKtp" class="form-check-input" onchange="toggleDomisili()">
+                                <label for="samaKtp" class="form-check-label">Alamat domisili sama dengan KTP</label>
+                            </div>
                             <label class="form-label">Alamat Domisili</label>
-                            <textarea name="alamat_domisili" class="form-control" rows="2">{{ old('alamat_domisili', $berkas->alamat_domisili) }}</textarea>
+                            <textarea name="alamat_domisili" id="alamat_domisili" class="form-control" rows="2">{{ old('alamat_domisili', $berkas->alamat_domisili) }}</textarea>
                         </div>
 
                         <div class="row">
@@ -115,26 +120,18 @@
                         <hr class="my-4">
                         <h6 class="fw-bold mb-3">Data Proses</h6>
 
+                        <!-- Kantor (Readonly & Hidden ID) -->
                         <div class="mb-3">
                             <label class="form-label">Kantor</label>
-                            <select name="kantor_id" class="form-select" required>
-                                @foreach ($kantors as $kantor)
-                                    <option value="{{ $kantor->id }}" {{ old('kantor_id', $berkas->kantor_id) == $kantor->id ? 'selected' : '' }}>
-                                        {{ $kantor->nama_kantor }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <input type="text" class="form-control" value="{{ $berkas->kantor->nama_kantor ?? '-' }}" readonly disabled>
+                            <input type="hidden" name="kantor_id" value="{{ $berkas->kantor_id }}">
                         </div>
 
+                        <!-- SLO (Readonly & Hidden ID) -->
                         <div class="mb-3">
                             <label class="form-label">SLO</label>
-                            <select name="slo_id" class="form-select" required>
-                                @foreach ($slos as $slo)
-                                    <option value="{{ $slo->id }}" {{ old('slo_id', $berkas->slo_id) == $slo->id ? 'selected' : '' }}>
-                                        {{ $slo->name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <input type="text" class="form-control" value="{{ $berkas->slo->name ?? '-' }}" readonly disabled>
+                            <input type="hidden" name="slo_id" value="{{ $berkas->slo_id }}">
                         </div>
 
                         <div class="mb-3">
@@ -148,7 +145,7 @@
                         <div class="mb-3">
                             <label class="form-label">Tanggal Masuk</label>
                             <input type="text" name="tanggal_masuk" id="tanggal_masuk" class="form-control datepicker"
-                                   value="{{ old('tanggal_masuk', $berkas->tanggal_masuk->format('d-m-Y')) }}"
+                                   value="{{ old('tanggal_masuk', $berkas->tanggal_masuk ? \Carbon\Carbon::parse($berkas->tanggal_masuk)->format('d-m-Y') : '') }}"
                                    placeholder="dd-mm-yyyy" required autocomplete="off">
                         </div>
 
@@ -168,8 +165,30 @@
         </div>
     </div>
 
+    <!-- Flatpickr JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
     <script>
+        function toggleDomisili() {
+            const checkbox = document.getElementById('samaKtp');
+            const domisili = document.getElementById('alamat_domisili');
+            if (checkbox.checked) {
+                domisili.value = document.getElementById('alamat_ktp').value;
+                domisili.readOnly = true;
+            } else {
+                domisili.readOnly = false;
+            }
+        }
+
+        // Cek otomatis saat halaman load (jika alamat KTP dan Domisili sebelumnya sama)
+        document.addEventListener("DOMContentLoaded", function() {
+            const ktp = document.getElementById('alamat_ktp').value;
+            const domisili = document.getElementById('alamat_domisili').value;
+            if (ktp && domisili && ktp === domisili) {
+                document.getElementById('samaKtp').checked = true;
+                document.getElementById('alamat_domisili').readOnly = true;
+            }
+        });
+
         flatpickr(".datepicker", { dateFormat: "d-m-Y", allowInput: true });
 
         document.getElementById('no_hp').addEventListener('input', function (e) {
@@ -191,11 +210,11 @@
             convertDateFormat('tanggal_lahir');
             convertDateFormat('tanggal_masuk');
         });
+
         function convertDateFormat(id) {
             const field = document.getElementById(id);
             const parts = field.value.split('-');
             if (parts.length === 3) field.value = `${parts[2]}-${parts[1]}-${parts[0]}`;
         }
     </script>
-
 </x-app-layout>

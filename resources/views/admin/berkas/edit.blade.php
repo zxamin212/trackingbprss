@@ -210,11 +210,7 @@
         const sloDisplay = document.getElementById('slo_display');
         const sloHidden = document.getElementById('slo_id');
 
-        const daftarSlo = [
-            @foreach ($slos as $slo)
-                { id: {{ $slo->id }}, kantorId: {{ $slo->kantor_id }}, nama: @json($slo->name) },
-            @endforeach
-        ];
+        const daftarSlo = @json($slos->map(fn ($s) => ['id' => $s->id, 'kantorId' => $s->kantor_id, 'nama' => $s->name])->values());
 
         function setSloByKantor() {
             const kantorId = parseInt(kantorSelect.value);

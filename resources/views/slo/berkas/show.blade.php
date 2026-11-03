@@ -7,6 +7,12 @@
     @if(session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
+    @if(session('error'))
+        <div class="alert alert-danger">{{ session('error') }}</div>
+    @endif
+    @if($errors->any())
+        <div class="alert alert-danger">{{ $errors->first() }}</div>
+    @endif
 
     @php
         $statusColor = match($berkas->status_terkini) {
@@ -164,29 +170,32 @@
                                     Tandai Cair
                                 </button>
                             </form>
-                            @elseif($berkas->status_terkini === 'pending')
-                                <form action="{{ route('slo.berkas.lanjutkan', $berkas->id) }}" method="POST" class="mb-2">
-                                    @csrf
-                                    <button type="submit" class="btn btn-primary btn-round w-100"
-                                            onclick="return confirm('Lanjutkan kembali proses berkas ini?')">
-                                        Lanjutkan Proses
-                                    </button>
-                                </form>
-                            @endif
+                        @elseif($berkas->status_terkini === 'pending')
+                            <form action="{{ route('slo.berkas.lanjutkan', $berkas->id) }}" method="POST" class="mb-2">
+                                @csrf
+                                <button type="submit" class="btn btn-primary btn-round w-100"
+                                        onclick="return confirm('Lanjutkan kembali proses berkas ini?')">
+                                    Lanjutkan Proses
+                                </button>
+                            </form>
+                        @endif
 
                         <hr>
 
                         <div class="row g-2">
-                            <div class="col-4">
-                                <form action="{{ route('slo.berkas.pending', $berkas->id) }}" method="POST">
-                                    @csrf
-                                    <button type="submit" class="btn btn-label-warning btn-round w-100 btn-sm"
-                                            onclick="return confirm('Tandai berkas ini pending?')">
-                                        Pending
-                                    </button>
-                                </form>
-                            </div>
-                            <div class="col-4">
+                            {{-- Pending tidak ditampilkan kalau berkas sudah pending --}}
+                            @if($berkas->status_terkini !== 'pending')
+                                <div class="col">
+                                    <form action="{{ route('slo.berkas.pending', $berkas->id) }}" method="POST">
+                                        @csrf
+                                        <button type="submit" class="btn btn-label-warning btn-round w-100 btn-sm"
+                                                onclick="return confirm('Tandai berkas ini pending?')">
+                                            Pending
+                                        </button>
+                                    </form>
+                                </div>
+                            @endif
+                            <div class="col">
                                 <form action="{{ route('slo.berkas.tolak', $berkas->id) }}" method="POST">
                                     @csrf
                                     <button type="submit" class="btn btn-label-danger btn-round w-100 btn-sm"
@@ -195,7 +204,7 @@
                                     </button>
                                 </form>
                             </div>
-                            <div class="col-4">
+                            <div class="col">
                                 <form action="{{ route('slo.berkas.batalkan', $berkas->id) }}" method="POST">
                                     @csrf
                                     <button type="submit" class="btn btn-label-dark btn-round w-100 btn-sm"

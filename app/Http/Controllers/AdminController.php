@@ -10,11 +10,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use App\Services\DurasiTahapService;
 use Carbon\Carbon;
 use Dompdf\Dompdf;
 use App\Services\LaporanBerkasService;
-
 
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -76,11 +76,7 @@ class AdminController extends Controller
         $berkas = BerkasKredit::findOrFail($id);
         $kantors = Kantor::orderBy('nama_kantor')->get();
         $slos = User::where('role', 'slo')->orderBy('name')->get();
-
-        $statusList = [
-            'diajukan', 'screening_data', 'slik', 'survey', 'komite',
-            'realisasi', 'cair', 'pending', 'tolak', 'batal',
-        ];
+        $statusList = BerkasKredit::STATUS;
 
         return view('admin.berkas.edit', compact('berkas', 'kantors', 'slos', 'statusList'));
     }
@@ -98,34 +94,26 @@ class AdminController extends Controller
             'alamat_domisili' => 'nullable|string',
             'no_hp'           => 'required|string|max:20',
             'pekerjaan_usaha' => 'required|string|max:255',
-            'jenis_kredit'    => 'required|string',
-            'plafon'          => 'required|numeric|min:0',
+            'jenis_kredit'    => ['required', Rule::in(array_merge(BerkasKredit::JENIS_KREDIT, [$berkas->jenis_kredit]))],
+            'plafon'          => 'required|numeric|min:0|max:9999999999999',
             'file_dokumen'    => 'nullable|file|mimes:pdf|max:5120',
             'kantor_id'       => 'required|exists:kantor,id',
-            'slo_id'          => 'required|exists:users,id',
+            'slo_id'          => ['required', Rule::exists('users', 'id')->where('role', 'slo')],
             'sumber'          => 'required|in:langsung,marketing',
             'tanggal_masuk'   => 'required|date',
             'tanggal_selesai' => 'nullable|date',
-            'status_terkini'  => 'required|string',
+            'status_terkini'  => ['required', Rule::in(BerkasKredit::STATUS)],
             'keterangan'      => 'nullable|string',
         ]);
 
-        DB::transaction(function () use ($validated, $request, $berkas) {
-            $statusLama = $berkas->status_terkini;
-            $statusBaru = $validated['status_terkini'];
+        $statusLama = $berkas->status_terkini;
+        $statusBaru = $validated['status_terkini'];
 
-            if ($request->hasFile('file_dokumen')) {
-                if ($berkas->file_dokumen && Storage::disk('public')->exists($berkas->file_dokumen)) {
-                    Storage::disk('public')->delete($berkas->file_dokumen);
-                }
-                $validated['file_dokumen'] = $request->file('file_dokumen')->store('berkas/dokumen', 'public');
-            } else {
-                unset($validated['file_dokumen']);
-            }
+        $file = $request->file('file_dokumen');
+        unset($validated['file_dokumen']);
 
-            $berkas->update($validated);
-
-            // Kalau status diubah oleh admin, catat sebagai override di histori
+        $berkas->updateDenganDokumen($validated, $file, function ($berkas) use ($statusLama, $statusBaru, $request) {
+            // Perubahan status oleh Admin dicatat sebagai override di riwayat
             if ($statusLama !== $statusBaru) {
                 $berkas->histories()->create([
                     'status'     => $statusBaru,

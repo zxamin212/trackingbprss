@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 
 class AdminLegalController extends Controller
 {
+    private const STATUS_BOLEH = ['realisasi', 'cair', 'semua'];
+
     public function dashboard()
     {
         $siapAkad = BerkasKredit::where('status_terkini', 'realisasi')->count();
@@ -23,11 +25,17 @@ class AdminLegalController extends Controller
 
     public function berkasIndex(Request $request)
     {
-        $status = $request->get('status', 'realisasi'); // default: siap akad
+        // Nilai di luar daftar (mis. ?status=pending) dianggap 'realisasi'
+        $status = in_array($request->get('status'), self::STATUS_BOLEH, true)
+            ? $request->get('status')
+            : 'realisasi';
 
         $berkas = BerkasKredit::with('kantor')
-            ->when($status !== 'semua', fn($q) => $q->where('status_terkini', $status))
-            ->when($status === 'semua', fn($q) => $q->whereIn('status_terkini', ['realisasi', 'cair']))
+            ->when(
+                $status === 'semua',
+                fn($q) => $q->whereIn('status_terkini', ['realisasi', 'cair']),
+                fn($q) => $q->where('status_terkini', $status)
+            )
             ->when($request->filled('cari'), fn($q) => $q->where('nama_nasabah', 'like', '%' . $request->cari . '%'))
             ->latest()
             ->paginate(15)

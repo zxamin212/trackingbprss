@@ -10,9 +10,21 @@ use App\Services\LaporanBerkasService;
 
 class AreaManagerController extends Controller
 {
+    private function kantorsInArea()
+    {
+        $area = auth()->user()->area;
+
+        // Area Manager tanpa wilayah tidak boleh melihat kantor apa pun
+        if (!$area) {
+            return collect();
+        }
+
+        return Kantor::where('area', $area)->orderBy('nama_kantor')->get();
+    }
+
     private function kantorIdsInArea()
     {
-        return Kantor::where('area', auth()->user()->area)->pluck('id');
+        return $this->kantorsInArea()->pluck('id');
     }
 
     public function dashboard()
@@ -79,7 +91,7 @@ class AreaManagerController extends Controller
             'judul'       => "Laporan Berkas — Wilayah $area",
             'routeIndex'  => 'am.laporan.index',
             'routeExport' => 'am.laporan.export',
-            'kantors'     => Kantor::where('area', auth()->user()->area)->orderBy('nama_kantor')->get(),
+            'kantors' => $this->kantorsInArea(),
         ]);
     }
 
