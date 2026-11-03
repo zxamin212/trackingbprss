@@ -1,5 +1,5 @@
-# Menggunakan PHP 8.2 FPM Alpine sebagai base image yang ringan
-FROM php:8.2-fpm
+# Menggunakan PHP 8.3 FPM sebagai base image
+FROM php:8.3-fpm
 
 # Install dependencies sistem dan ekstensi PHP yang dibutuhkan Laravel
 RUN apt-get update && apt-get install -y \
@@ -17,13 +17,19 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 # Install ekstensi PHP
 RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 
-# Install Composer
+# Install Composer resmi dari image composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Set working directory
 WORKDIR /var/www
 
-# Salin seluruh file proyek ke dalam container
+# Salin file composer terlebih dahulu untuk optimalisasi cache Docker
+COPY composer.json composer.lock ./
+
+# Jalankan composer install otomatis saat proses build
+RUN composer install --no-dev --optimize-autoloader --no-interaction
+
+# Salin seluruh sisa file proyek ke dalam container
 COPY . .
 
 # Berikan izin akses untuk storage dan bootstrap/cache
