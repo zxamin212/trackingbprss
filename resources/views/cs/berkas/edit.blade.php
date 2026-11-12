@@ -88,11 +88,7 @@
 
                         <div class="mb-3">
                             <label class="form-label">Jenis Kredit</label>
-                            <select name="jenis_kredit" class="form-select" required>
-                                @foreach (['Kredit Modal Usaha', 'Kredit Investasi', 'Kredit Konsumtif'] as $jenis)
-                                    <option value="{{ $jenis }}" {{ old('jenis_kredit', $berkas->jenis_kredit) == $jenis ? 'selected' : '' }}>{{ $jenis }}</option>
-                                @endforeach
-                            </select>
+                            <x-jenis-kredit-select :selected="$berkas->jenis_kredit" />
                         </div>
 
                         <div class="mb-3">
