@@ -111,13 +111,13 @@
                     <i class="fas fa-sign-in-alt me-1"></i> Masuk
                 </button>
 
-                @if (Route::has('password.request'))
+                {{-- @if (Route::has('password.request'))
                     <div class="text-center mt-3">
                         <a href="{{ route('password.request') }}" class="text-decoration-none" style="font-size: 13px;">
                             Lupa password?
                         </a>
                     </div>
-                @endif
+                @endif --}}
             </form>
 
         </div>
