@@ -25,6 +25,7 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www
 
+
 # 1. Salin HANYA file konfigurasi composer terlebih dahulu
 COPY composer.json composer.lock ./
 
@@ -32,6 +33,11 @@ COPY composer.json composer.lock ./
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
 # 3. Salin seluruh sisa file proyek ke dalam container (termasuk artisan)
+
+# Jalankan composer install otomatis saat proses build
+RUN composer install --no-dev --optimize-autoloader --no-interaction
+
+# Salin seluruh sisa file proyek ke dalam container
 COPY . .
 
 # 4. Jalankan script post-autoload-dump sekarang karena file artisan sudah tersedia
