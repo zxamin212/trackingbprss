@@ -192,6 +192,17 @@
                             </a>
                         </li>
                     @endif
+                                        {{-- Logout (khusus HP/tablet) --}}
+                    <li class="nav-section"><h4 class="text-section">Akun</h4></li>
+                    <li class="nav-item">
+                        <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form-sidebar').submit();">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <p>Keluar</p>
+                        </a>
+                        <form id="logout-form-sidebar" action="{{ route('logout') }}" method="POST" class="d-none">
+                            @csrf
+                        </form>
+                    </li>
                 @endauth
 
             </ul>
