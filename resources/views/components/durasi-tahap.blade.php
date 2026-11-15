@@ -6,6 +6,7 @@
         'screening_data' => 'Screening Data',
         'slik' => 'SLIK',
         'survey' => 'Survey',
+        'resume_analisa_kredit' => 'Resume Analisa Kredit',
         'komite' => 'Komite',
         'realisasi' => 'Realisasi',
     ];

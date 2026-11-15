@@ -19,7 +19,7 @@ class BerkasKredit extends Model
     ];
 
     public const STATUS = [
-        'diajukan', 'screening_data', 'slik', 'survey', 'komite',
+        'diajukan', 'screening_data', 'slik', 'survey', 'resume_analisa_kredit', 'komite',
         'realisasi', 'cair', 'pending', 'tolak', 'batal',
     ];
 

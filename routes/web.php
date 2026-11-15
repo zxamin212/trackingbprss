@@ -115,6 +115,7 @@ Route::middleware(['auth', 'role:slo'])
     Route::post('/berkas/{id}/screening', [SloController::class, 'updateScreening'])->name('berkas.screening');
     Route::post('/berkas/{id}/slik', [SloController::class, 'updateSlik'])->name('berkas.slik');
     Route::post('/berkas/{id}/survey', [SloController::class, 'updateSurvey'])->name('berkas.survey');
+    Route::post('/berkas/{id}/resume-analisa', [SloController::class, 'updateResumeAnalisa'])->name('berkas.resume-analisa');
     Route::post('/berkas/{id}/komite', [SloController::class, 'updateKomite'])->name('berkas.komite');
     Route::post('/berkas/{id}/realisasi', [SloController::class, 'updateRealisasi'])->name('berkas.realisasi');
     Route::post('/berkas/{id}/cair', [SloController::class, 'updateCair'])->name('berkas.cair');

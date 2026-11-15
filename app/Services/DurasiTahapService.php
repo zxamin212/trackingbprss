@@ -7,7 +7,7 @@ use App\Models\BerkasKreditHistory;
 
 class DurasiTahapService
 {
-    public const TAHAP = ['diajukan', 'screening_data', 'slik', 'survey', 'komite', 'realisasi'];
+    public const TAHAP = ['diajukan', 'screening_data', 'slik', 'survey', 'resume_analisa_kredit', 'komite', 'realisasi'];
 
     /**
      * Rata-rata durasi (hari) per tahap.

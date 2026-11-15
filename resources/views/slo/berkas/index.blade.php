@@ -50,6 +50,7 @@
                                     'screening_data' => 'info',
                                     'slik' => 'info',
                                     'survey' => 'primary',
+                                    'resume_analisa_kredit' => 'primary',
                                     'komite' => 'primary',
                                     'realisasi' => 'warning',
                                     'cair' => 'success',

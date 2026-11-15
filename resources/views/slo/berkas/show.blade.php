@@ -20,6 +20,7 @@
             'screening_data' => 'info',
             'slik' => 'info',
             'survey' => 'primary',
+            'resume_analisa_kredit' => 'primary',
             'komite' => 'primary',
             'realisasi' => 'warning',
             'cair' => 'success',
@@ -146,15 +147,23 @@
                                     Mulai Survey
                                 </button>
                             </form>
-                        @elseif($berkas->status_terkini === 'survey')
-                            <form action="{{ route('slo.berkas.komite', $berkas->id) }}" method="POST" class="mb-2">
-                                @csrf
-                                <button type="submit" class="btn btn-primary btn-round w-100"
-                                        onclick="return confirm('Lanjutkan ke tahap komite?')">
-                                    Lanjut ke Komite
-                                </button>
-                            </form>
-                        @elseif($berkas->status_terkini === 'komite')
+                            @elseif($berkas->status_terkini === 'survey')
+                                <form action="{{ route('slo.berkas.resume-analisa', $berkas->id) }}" method="POST" class="mb-2">
+                                    @csrf
+                                    <button type="submit" class="btn btn-primary btn-round w-100"
+                                            onclick="return confirm('Lanjutkan ke tahap resume analisa kredit?')">
+                                        Lanjut ke Resume Analisa Kredit
+                                    </button>
+                                </form>
+                            @elseif($berkas->status_terkini === 'resume_analisa_kredit')
+                                <form action="{{ route('slo.berkas.komite', $berkas->id) }}" method="POST" class="mb-2">
+                                    @csrf
+                                    <button type="submit" class="btn btn-primary btn-round w-100"
+                                            onclick="return confirm('Lanjutkan ke tahap komite?')">
+                                        Lanjut ke Komite
+                                    </button>
+                                </form>
+                            @elseif($berkas->status_terkini === 'komite')
                             <form action="{{ route('slo.berkas.realisasi', $berkas->id) }}" method="POST" class="mb-2">
                                 @csrf
                                 <button type="submit" class="btn btn-success btn-round w-100"

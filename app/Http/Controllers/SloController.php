@@ -17,7 +17,8 @@ class SloController extends Controller
         'screening_data' => ['diajukan'],
         'slik'           => ['screening_data'],
         'survey'         => ['slik'],
-        'komite'         => ['survey'],
+        'resume_analisa_kredit' => ['survey'],
+        'komite'         => ['resume_analisa_kredit'],
         'realisasi'      => ['komite'],
         'cair'           => ['realisasi'],
     ];
@@ -155,6 +156,12 @@ class SloController extends Controller
     {
         $this->updateStatus($id, 'survey', 'Berkas masuk tahap survey');
         return back()->with('success', 'Berkas masuk tahap Survey.');
+    }
+
+    public function updateResumeAnalisa(Request $request, $id)
+    {
+    $this->updateStatus($id, 'resume_analisa_kredit', 'Berkas masuk tahap resume analisa kredit');
+    return back()->with('success', 'Berkas masuk tahap Resume Analisa Kredit.');
     }
 
     public function updateKomite(Request $request, $id)
